@@ -42,7 +42,6 @@ if __name__ == "__main__":
             "loss": ['squared_error', 'huber', 'epsilon_insensitive'],
             "fit_intercept": [False, True],
             }
-    mlflow.set_tracking_uri(uri="http://127.0.0.1:5000")
     mlflow.set_experiment("linear model cars")
     with mlflow.start_run():
         lr = SGDRegressor(random_state=42)
