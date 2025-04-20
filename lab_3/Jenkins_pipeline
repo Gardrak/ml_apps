@@ -1,0 +1,79 @@
+----------Download----------
+python -m venv .\my_env    
+.\my_env\Scripts\activate       
+cd .\lab_3                 
+python -m ensurepip --upgrade
+pip install setuptools
+pip install -r requirements.txt 
+python download.py      
+------------------------------
+
+----------Train model----------
+@echo off
+echo Start train model
+cd C:\ProgramData\Jenkins\.jenkins\workspace\Download
+.\my_env\Scripts\activate     
+cd .\lab_3    
+python train_model.py > best_model.txt        
+------------------------------
+
+----------Deploy----------
+@echo off
+cd C:\ProgramData\Jenkins\.jenkins\workspace\Download
+.\my_env\Scripts\activate
+cd .\lab_3                         
+set BUILD_ID=dontKillMe
+set JENKINS_NODE_COOKIE=dontKillMe
+for /f "delims=" %%i in (best_model.txt) do set "path_model=%%i"
+start /B mlflow models serve -m %path_model% -p 5003 --no-conda
+------------------------------
+
+----------healthy----------
+cd C:\ProgramData\Jenkins\.jenkins\workspace\Download
+.\my_env\Scripts\activate     
+cd .\lab_3 
+start /B mlflow models serve -m %path_model% -p 5003 --no-conda
+timeout /t 10 >nul
+curl http://127.0.0.1:5003/invocations -H "Content-Type: application/json" --data "{\"inputs\": [[-1.75938045, -1.2340347, -1.41327673, 0.76150439, 2.20097247, -0.10937195, 0.58931542, 0.1135538]]}"
+------------------------------
+
+----------Pipeline----------
+pipeline {
+    agent any
+
+    stages {
+        stage('Start Download') {
+            steps {
+               
+                build job: "Download"
+               
+            }
+        }
+       
+        stage ('Train') {
+           
+            steps {
+               
+                script {
+                    dir('C:/ProgramData/Jenkins/.jenkins/workspace/Download') {
+                        build job: "Train model"
+                    }
+                }
+           
+            }
+        }
+       
+        stage ('Deploy') {
+            steps {
+                build job: 'Deploy'
+            }
+        }
+       
+        stage ('Status') {
+            steps {
+                build job: 'healthy'
+            }
+        }
+    }
+}
+------------------------------
