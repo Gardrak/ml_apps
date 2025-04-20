@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    stages {
+        // Этап 1: Загрузка данных
+        stage('Data Download') {
+            steps {
+                script {
+                    // Пример: Загрузка CSV с GitHub
+                    sh 'wget https://raw.githubusercontent.com/username/repo/main/data.csv -O data.csv'
+                    // Или клонирование репозитория:
+                    git branch: 'main', url: 'git@github.com:username/repo.git'
+                }
+            }
+        }
+
+        // Этап 2: Обработка данных
+        stage('Data Preprocessing') {
+            steps {
+                script {
+                    sh 'python data_preprocessing.py'
+                }
+            }
+        }
+
+        // Этап 3: Обучение модели
+        stage('Model Training') {
+            steps {
+                script {
+                    sh 'python train_model.py'
+                }
+            }
+        }
+
+        // Этап 4: Развертывание модели как сервиса
+        stage('Deploy Model') {
+            steps {
+                script {
+                    sh 'python deploy_model.py &'  # Запуск Flask-сервера в фоне
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'model.pkl, data_processed.csv', fingerprint: true
+        }
+    }
+}
